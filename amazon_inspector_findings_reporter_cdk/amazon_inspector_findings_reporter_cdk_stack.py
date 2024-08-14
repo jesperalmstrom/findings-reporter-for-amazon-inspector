@@ -13,17 +13,20 @@ from aws_cdk import aws_events as events
 from aws_cdk import aws_sns_subscriptions as subscriptions
 from aws_cdk import aws_s3_notifications as s3n
 from aws_cdk import aws_kms as kms
+# Duration
+from aws_cdk import Duration
 
 
 class InspectorFindingsReportStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
-
+        bucket_name = self.node.try_get_context('bucketName')
         # Create S3 bucket to store the report
         inspector_report_bucket = s3.Bucket(
-            self, "InspectorReportBucket",
-            encryption=s3.BucketEncryption.S3_MANAGED,
-            enforce_ssl=True,
+            self, bucket_name,
+            bucket_name=f'{bucket_name}.{self.region}.{self.account}',
+            # encryption=s3.BucketEncryption.S3_MANAGED, # Gives Access Denied error because of Control Tower - GuradRail policy for the Audit account
+            # enforce_ssl=True,
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL
         )
         # Define the service principal for Amazon Inspector2
@@ -33,9 +36,10 @@ class InspectorFindingsReportStack(Stack):
         bucket_policy_statement = iam.PolicyStatement(
             actions=["s3:PutObject",
                      "s3:PutObjectAcl",
-                     "s3:AbortMultipartUpload"],
+                     "s3:AbortMultipartUpload",
+                    ],
             resources=[inspector_report_bucket.bucket_arn + "/*"],  # Grant access to the objects in the bucket
-            principals=[inspector_principal]
+            principals=[inspector_principal]  # Grant access to the Amazon Inspector service
         )
 
         # Attach the policy statement to the bucket
@@ -101,7 +105,7 @@ class InspectorFindingsReportStack(Stack):
             print("please specify proper notification_system in cdk.json")
 
         # Create Lambda function to send the report
-
+        OUTPUT_FORMAT = self.node.try_get_context('outputFormat')
         inspector_report_generator_lambda = _lambda.Function(
             self, "InspectorReportFunction",
             runtime=_lambda.Runtime.PYTHON_3_12,
@@ -109,7 +113,8 @@ class InspectorFindingsReportStack(Stack):
             code=_lambda.Code.from_asset("./lambda/report_generator/"),
             environment={
                 "BUCKET_NAME": inspector_report_bucket.bucket_name,
-                "KMS_KEY": inspector_report_cmk.key_arn
+                "KMS_KEY": inspector_report_cmk.key_arn,
+                "OUTPUT_FORMAT": OUTPUT_FORMAT
             },
             role=lambda_role
         )
@@ -134,17 +139,18 @@ class InspectorFindingsReportStack(Stack):
         # Add an S3 event notification to trigger the Lambda function
         inspector_report_bucket.add_event_notification(s3.EventType.OBJECT_CREATED,
                                                        s3n.LambdaDestination(report_sender_lambda))
-
+        report_frequency = self.node.try_get_context('reportFrequency')
+        
+        schedule_cron = 'cron(05 0 * * ? *)' # default value = daily
+        if report_frequency == "WEEKLY":
+            schedule_cron = 'cron(05 0 ? * MON *)'
+        elif report_frequency == "MONTHLY":
+            schedule_cron = 'cron(05 0 1 * ? *)'
         # create an event bridge rule to trigger the lambda every 24 hours
         rule = events.Rule(
             self,
             "Rules",
-            schedule=events.Schedule.cron(
-                minute="05",
-                hour="00",
-                day="*",
-                month="*",
-                year="*")
+            schedule=events.Schedule.expression(schedule_cron)
         )
 
         # Add the Lambda function as a target
