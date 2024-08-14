@@ -21,6 +21,8 @@ class InspectorFindingsReportStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
         bucket_name = self.node.try_get_context('bucketName')
+        if not bucket_name:
+            bucket_name = "inspector-report-bucket"
         # Create S3 bucket to store the report
         inspector_report_bucket = s3.Bucket(
             self, bucket_name,
@@ -106,6 +108,8 @@ class InspectorFindingsReportStack(Stack):
 
         # Create Lambda function to send the report
         OUTPUT_FORMAT = self.node.try_get_context('outputFormat')
+        if not OUTPUT_FORMAT:
+            OUTPUT_FORMAT = "CSV"
         inspector_report_generator_lambda = _lambda.Function(
             self, "InspectorReportFunction",
             runtime=_lambda.Runtime.PYTHON_3_12,
@@ -140,6 +144,8 @@ class InspectorFindingsReportStack(Stack):
         inspector_report_bucket.add_event_notification(s3.EventType.OBJECT_CREATED,
                                                        s3n.LambdaDestination(report_sender_lambda))
         report_frequency = self.node.try_get_context('reportFrequency')
+        if not report_frequency:
+            report_frequency = "DAILY"
         
         schedule_cron = 'cron(05 0 * * ? *)' # default value = daily
         if report_frequency == "WEEKLY":
