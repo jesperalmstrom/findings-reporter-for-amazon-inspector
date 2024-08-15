@@ -15,8 +15,11 @@
     ]
   },
   "context": {
+    "bucketName": "inspector-findings",
+    "outputFormat": "JSON",
+    "reportFrequency": "WEEKLY",
     "notificationSystem": "SES",
-    "ses_sender":"abc@example.com",
+    "ses_sender":"inspector-findings@example.com",
     "ses_receivers": ["cloudops@example.com","secops@example.com"],
     "sns_subscribed_emails":["cloudops@example.com"],
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
