@@ -9,6 +9,8 @@ from amazon_inspector_findings_reporter_cdk.amazon_inspector_findings_reporter_c
 
 
 app = cdk.App()
-InspectorFindingsReportStack(app, "AmazonInspectorFindingsReporterCdkStack")
-
+stack = InspectorFindingsReportStack(app, "AmazonInspectorFindingsReporterCdkStack")
+# add tags to stack Owner, Component
+cdk.Tags.of(stack).add("Owner", "CloudEngineering")
+cdk.Tags.of(stack).add("Component", "InspectorFindingsReporter")
 app.synth()

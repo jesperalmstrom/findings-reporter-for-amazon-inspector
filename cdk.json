@@ -16,7 +16,7 @@
   },
   "context": {
     "bucketName": "inspector-findings",
-    "outputFormat": "JSON",
+    "outputFormat": "CSV",
     "reportFrequency": "WEEKLY",
     "notificationSystem": "SES",
     "ses_sender":"inspector-findings@example.com",
