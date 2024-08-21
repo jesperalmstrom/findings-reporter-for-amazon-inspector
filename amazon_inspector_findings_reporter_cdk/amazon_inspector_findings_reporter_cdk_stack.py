@@ -34,6 +34,24 @@ class InspectorFindingsReportStack(Stack):
             # enforce_ssl=True,
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
         )
+        FINANCE_PROD = self.node.try_get_context("financeProdAccount")
+        FINANCE_NONPROD = self.node.try_get_context("financeNonProdAccount")
+        # Add Finance accounts to the bucket policy
+        inspector_report_bucket.add_to_resource_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["s3:GetObject*", "s3:ListBucket*"],
+                resources=[
+                    inspector_report_bucket.arn_for_objects("*"),
+                    inspector_report_bucket.bucket_arn,
+                ],
+                principals=[
+                    iam.AccountPrincipal(FINANCE_PROD),
+                    iam.AccountPrincipal(FINANCE_NONPROD),
+                ],
+            ),
+        )
+
         # Define the service principal for Amazon Inspector2
         inspector_principal = iam.ServicePrincipal("inspector2.amazonaws.com")
 

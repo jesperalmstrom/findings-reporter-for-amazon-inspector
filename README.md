@@ -189,6 +189,6 @@ aws lambda invoke --function-name
 
 After the report is generated, you can view the report in the S3 bucket. The S3 bucket name can be found in the CloudFormation stack output.
 
-```sh	
+```sh
 aws s3api select-object-content --bucket <BUCKET-NAME> --key <DIR/MY-FILE.CSV> --expression "select * from s3object limit 10" --expression-type "SQL" --input-serialization "CSV={}" --output-serialization "CSV={}" "OUTPUT.csv"
 ```
