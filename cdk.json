@@ -22,6 +22,8 @@
     "ses_sender":"inspector-findings@example.com",
     "ses_receivers": ["cloudops@example.com","secops@example.com"],
     "sns_subscribed_emails":["cloudops@example.com"],
+    "financeNonProdAccount": "012345678901",
+    "financeProdAccount": "012345678902",
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
     "@aws-cdk/core:target-partitions": [
